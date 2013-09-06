@@ -12,8 +12,8 @@
 
     AllowEncodedSlashes on
 
-    ServerAdmin webmaster@localhost
-
+    ServerAdmin mail@julius-seltenheim.com
+	
     CustomLog ${APACHE_LOG_DIR}/access.log combined
     ErrorLog ${APACHE_LOG_DIR}/error.log
     LogLevel warn
@@ -34,4 +34,28 @@
     ProxyPass / balancer://mycluster/ nocanon
     ProxyPassReverse / http://localhost:9000/
     ProxyPassReverse / http://localhost:9001/
+</VirtualHost>
+
+<VirtualHost *:80>
+	ServerName calendar.julius-seltenheim.com
+
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName calendar.julius-seltenheim.com
+
+	RequestHeader set X-Forwarded-Proto "https"
+    SSLEngine On
+    SSLCertificateFile /etc/ssl/certs/julius-seltenheim.com.crt
+    SSLCertificateKeyFile /etc/ssl/private/julius-seltenheim.com.key
+    <Location />
+        SSLRequireSSL
+    </Location>
+	
+    ProxyPreserveHost On
+    ProxyPass / http://localhost:8008/
+    ProxyPassReverse / http://localhost:8008/
 </VirtualHost>
