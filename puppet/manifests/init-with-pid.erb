@@ -1,0 +1,136 @@
+#!/bin/bash
+
+set -x
+
+### BEGIN INIT INFO
+# Provides:          <%= @name %>
+# Required-Start:    $local_fs $remote_fs
+# Required-Stop:     $local_fs $remote_fs
+# Should-Start:      $network
+# Should-Stop:       $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Daemonized version of <%= @name %>.
+# Description:       
+### END INIT INFO
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# # # # #   M A I N  C U S T O M I S A T I O N   S E C T I O N  # # # # # 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+APPLICATION_PATH="<%= @application_path %>"
+APPLICATION_NAME="<%= @name %>"
+PARAMS="<%= @start_script_params %>"
+JAVA_HOME=/usr/lib/jvm/java-6-openjdk
+export JAVA_HOME
+USER=<%= @user %>
+GROUP=<%= @group %>
+PIDFILE="<%= @pid_file %>"
+START_CMD="<%= @start_command %>"
+CURRENT_WORKING_DIR="<%= @current_working_dir %>"
+UNZIPPED_FOLDERNAME="<%= @unzipped_foldername %>"
+
+# source function library
+# -> comented out for ubuntu . /etc/init.d/functions
+RETVAL=0
+
+#you can't start directly in folder with start script
+cd ${CURRENT_WORKING_DIR}
+chown -R ${USER}:${USER} /var/${USER}
+
+start() {
+        chmod ug+x *.sh #fix for freeplane
+        start-stop-daemon --chdir ${CURRENT_WORKING_DIR} --start -p "${PIDFILE}" --background --chuid ${USER}:${GROUP} --exec /bin/bash -- ${START_CMD}
+        RETVAL=$?
+        if [ $RETVAL -eq 0 ]; then
+                echo "starting ${APPLICATION_NAME} - Success"
+        else
+                echo "starting ${APPLICATION_NAME} - Failure"
+                return ${RETVAL}
+        fi
+        echo
+}
+stop() {
+        kill -15 `cat ${PIDFILE}`
+        RETVAL=$?
+
+        for i in `seq 1 1 10`
+        do
+           if [ -e "${PIDFILE}" ]
+           then
+             echo "${APPLICATION_NAME} still up, sleeping ${i} seconds"
+             sleep ${i}
+           fi
+        done
+
+        rm -rf ${PIDFILE}
+
+        if [ $RETVAL -eq 0 ]; then
+                echo "Stopping Application: ${APPLICATION_NAME} - Success"
+        else
+                echo "Stopping Application: ${APPLICATION_NAME} - Failure"
+                return ${RETVAL}
+        fi
+        echo
+}
+clean() {
+        rm -f ${PIDFILE}
+}
+status() {
+        PID=`cat ${PIDFILE}` || true
+        if [ -n "$PID" ]; then
+            echo "${APPLICATION_NAME} is running (pid $PID)."
+            return 0
+        else
+            echo "${APPLICATION_NAME} is NOT running."
+            if [ -e "$PIDFILE" ]; then
+                return 1
+            else
+                return 3
+            fi
+        fi
+}
+next() {
+        echo next
+        service_name=${USER}
+
+        service ${service_name} stop
+
+        current_folder=/var/${service_name}/current
+        import_folder=/home/import/${service_name}
+        #todo version independent
+        unzipped_folder="${UNZIPPED_FOLDERNAME}"
+
+        cd ${import_folder} && \
+        rm -rf ${unzipped_folder} && \
+        unzip *.zip && \
+        rm -rf ${current_folder} && \
+        mkdir ${current_folder} && \
+        mv ${unzipped_folder}/* ${current_folder}
+        chown -R ${service_name}:${service_name} ${current_folder}
+        service ${service_name} start
+        #todo schlägt das fehl, alte Version starten
+}
+case "$1" in
+        start)
+        clean
+        start
+        ;;
+        stop)
+        stop
+        ;;
+        restart|reload)
+        stop
+        sleep 10
+        start
+        ;;
+        status)
+        status
+        ;;
+        next)
+        next
+        ;;
+        *)
+        echo "Usage: $0 {start|stop|restart|status|next}"
+esac
+exit 0

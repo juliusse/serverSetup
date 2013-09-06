@@ -1,0 +1,43 @@
+<VirtualHost *:80>
+    <Location /ci>
+        RewriteEngine On
+        RewriteCond %{HTTPS} off
+        RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
+    </Location>
+
+    Options -Indexes
+    DocumentRoot /var/www/
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName <%= @domain %>
+    RewriteEngine on
+    RewriteCond %{HTTP_HOST} !^<%= @domain %>
+    RewriteRule ^/(.*)$ https://<%= @domain %>/$1 [L,R=301]
+
+    RequestHeader set X-Forwarded-Proto "https"
+    SSLEngine On
+    SSLCertificateFile /etc/ssl/certs/server.crt
+    SSLCertificateKeyFile /etc/ssl/private/server.key
+    <Location />
+        SSLRequireSSL
+    </Location>
+
+    ServerAdmin webmaster@localhost
+
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    LogLevel warn
+
+    #https://wiki.jenkins-ci.org/display/JENKINS/Running+Jenkins+behind+Apache
+    ProxyPass         /<%= @jenkinsContextPath %>  http://localhost:<%= @jenkinsPort %>/<%= @jenkinsContextPath %>
+    ProxyPassReverse  /<%= @jenkinsContextPath %>  http://localhost:<%= @jenkinsPort %>/<%= @jenkinsContextPath %>
+    ProxyRequests     Off
+
+    # Local reverse proxy authorization override
+    # Most unix distribution deny proxy by default (ie /etc/apache2/mods-enabled/proxy.conf in Ubuntu)
+    <Proxy http://localhost:<%= @jenkinsPort %>/<%= @jenkinsContextPath %>*>
+        Order deny,allow
+        Allow from all
+    </Proxy>
+</VirtualHost>

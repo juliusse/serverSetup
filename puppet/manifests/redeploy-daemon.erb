@@ -1,0 +1,92 @@
+#!/bin/bash
+
+set -x
+
+LOGFILE="/var/log/<%= @redeploy_name %>/${1}_log.txt"
+mkdir -p `dirname $LOGFILE`
+echo NOTE: script output is written into $LOGFILE
+exec &>> $LOGFILE >&1
+
+### BEGIN INIT INFO
+# Provides:          <%= @redeploy_name %>
+# Required-Start:    $local_fs $remote_fs
+# Required-Stop:     $local_fs $remote_fs
+# Should-Start:      $network
+# Should-Stop:       $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Demonized to deploy new artifacts of <%= @name %>.
+# Description:
+### END INIT INFO
+
+ARTIFACT="<%= @artifact %>"
+NAME="<%= @name %>"
+APPLICATION_NAME="<%= @redeploy_name %>"
+
+start() {
+    echo starting $APPLICATION_NAME
+    start-stop-daemon --start --verbose --background --exec /etc/init.d/${APPLICATION_NAME} -- run
+}
+
+run_shutdown() {
+    echo kill process and subprocesses
+    kill $(jobs -p)
+    exit 0
+}
+
+run() {
+    echo run redeploy demon $APPLICATION_NAME
+    trap run_shutdown SIGINT SIGTERM EXIT
+    should_run=1
+    while [ "$should_run" == "1" ]; do
+        echo waiting for changes of file ${ARTIFACT} on $(date)
+        inotifywait -e close_write ${ARTIFACT} 1> /dev/null 2>&1
+        result_of_inotify_wait=$?
+        if [ "$result_of_inotify_wait" == "0" ]; then
+            echo redeploy ${ARTIFACT}
+            service ${NAME} next
+        elif [ "$result_of_inotify_wait" == "1" ] ; then
+            echo not found
+            sleep 15
+        else
+            echo "outdated run"
+            should_run=0
+        fi
+    done
+    echo "leave run"
+}
+
+stop() {
+    echo Stopping Application: ${APPLICATION_NAME}
+    kill -9 $(ps aux | grep "${APPLICATION_NAME} run" | awk '{print $2}')
+    kill -9 $(ps aux | grep "inotifywait -e close_write /home/import/${NAME}/" | awk '{print $2}')
+    return 0
+}
+clean() {
+    echo clean
+    stop
+}
+
+case "$1" in
+        start)
+        clean
+        start
+        ;;
+        stop)
+        stop
+        ;;
+        restart|reload)
+        stop
+        sleep 10
+        start
+        ;;
+        status)
+        status
+        ;;
+        run)
+        run
+        ;;
+        *)
+        echo Usage: $0 {start|stop|restart}
+esac
+exit 0
