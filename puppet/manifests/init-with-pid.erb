@@ -39,7 +39,6 @@ cd ${CURRENT_WORKING_DIR}
 chown -R ${USER}:${USER} /var/${USER}
 
 start() {
-        chmod ug+x *.sh #fix for freeplane
         start-stop-daemon --chdir ${CURRENT_WORKING_DIR} --start -p "${PIDFILE}" --background --chuid ${USER}:${GROUP} --exec /bin/bash -- ${START_CMD}
         RETVAL=$?
         if [ $RETVAL -eq 0 ]; then
