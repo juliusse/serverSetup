@@ -122,7 +122,7 @@ file {"$vanime_artifact_folder":
   require => Add_user["import"]
 }
 
-add_redeploy_init_script {"play redeploy daemon":
+add_redeploy_init_script {"vanime redeploy daemon":
   name => "${vanime_username}",
   artifact => $vanime_artifact,
 }
