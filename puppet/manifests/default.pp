@@ -3,78 +3,13 @@ notify{"The deploy_environment is: ${deploy_environment}": }
 Exec { path => [ "/bin/", "/sbin/" , "/usr/bin/", "/usr/sbin/", "/usr/local/bin", ] }
 
 import "common.pp"
+import "methods.pp"
 
 import "mongodb.pp"
 include mongodb
 
-#http://projects.puppetlabs.com/projects/1/wiki/Debian_Apache2_Recipe_Patterns
-class apache($htpasswd_file_path = "/etc/apache2/.htpasswd") {
-  package { "apache2":
-    ensure => present,
-    require => Exec['apt-get-update'],
-  }
 
-  file {"/var/log/apache2":
-    ensure => "directory",
-    group => "root",
-    owner => "root"
-  }
-
-  define module ( $ensure = 'present') {
-    case $ensure {
-      'present' : {
-        exec { "/usr/sbin/a2enmod $name":
-          unless => "/bin/readlink -e ${apache2_mods}-enabled/${name}.load",
-          require => Package["apache2"],
-        }
-      }
-      'absent': {
-        exec { "/usr/sbin/a2dismod $name":
-          onlyif => "/bin/readlink -e ${apache2_mods}-enabled/${name}.load",
-          require => Package["apache2"],
-        }
-      }
-      default: { err ( "Unknown ensure value: '$ensure'" ) }
-    }
-  }
-
-  exec { "reload-apache2":
-    command => "/etc/init.d/apache2 reload",
-    refreshonly => true,
-  }
-
-  exec { "force-reload-apache2":
-    command => "/etc/init.d/apache2 force-reload",
-    refreshonly => true,
-  }
-
-  module { "proxy":  }
-  module { "proxy_http":  }
-  module { "proxy_balancer":  }
-  module { "ssl":  }
-  module { "headers":  }
-  module { "rewrite":  }
-
-
-  file { "apache htpasswd":
-      path => "$htpasswd_file_path",
-      content => file("$stuff_folder/manifests/htpasswd"),
-      require => Package["apache2"],
-  }
-
-  file { "apache-conf":
-      path    => "/etc/apache2/sites-available/default",
-      content => template("$stuff_folder/manifests/apache-virtual-host.erb"),
-      require  => [Package["apache2"], Module["proxy"], Module["proxy_http"], Module["proxy_balancer"], Module["headers"]],
-      notify => Exec["force-reload-apache2"],
-  }
-
-  service { "apache2":
-    ensure => running,
-    require => [Package["apache2"], File["apache-conf"]],
-  }
-}
-
+import "apache.pp"
 include apache
 
 #coreutils contains nohup
@@ -95,52 +30,6 @@ add_user { "$js_homepage_username":
   username => "$js_homepage_username",
   full_name => "js_homepage server",
   home => $js_homepage_home,
-}
-
-define add_init_script($name, $application_path, $start_command, $user, $group, $pid_file, $current_working_dir, $unzipped_foldername) {
-
-  file {"/etc/init.d/$name":
-      content => template("$stuff_folder/manifests/init-with-pid.erb"),
-      ensure => present,
-      group => "root",
-      owner => "root",
-      mode => 750,
-  }
-
-  exec {"activate /etc/init.d/$name":
-      command => "update-rc.d $name defaults",
-      require => File["/etc/init.d/$name"]
-  }
-}
-
-package {"inotify-tools":
-    require => Exec['apt-get-update'],
-}
-
-define add_redeploy_init_script($name, $artifact) {
-  $redeploy_name="$name-redeploy"
-
-  file {"/etc/init.d/$redeploy_name":
-      content => template("$stuff_folder/manifests/redeploy-daemon.erb"),
-      ensure => present,
-      group => "root",
-      owner => "root",
-      mode => 750,
-      require => Package["inotify-tools"],
-  }
-
-  exec {"activate /etc/init.d/$redeploy_name":
-      require => File["/etc/init.d/$redeploy_name"],
-      command => "update-rc.d $redeploy_name defaults",
-      notify => Service["$redeploy_name"],
-  }
-
-  service { "$redeploy_name":
-      ensure => "running",
-      enable  => "true",
-      hasstatus => false,
-      require => Exec["activate /etc/init.d/$redeploy_name"]
-  }
 }
 
 add_init_script {"$js_homepage_username":
@@ -195,6 +84,74 @@ file {"$js_homepage_username-log-folder":
     group => $js_homepage_username,
     mode  => '0770',
     require => Add_user[$js_homepage_username],
-}	
+}
+
+
+$vanime_username = "vanime"
+$vanime_artifact_folder = "/home/import/$vanime_username"
+$vanime_home = "/var/$vanime_username"
+$vanime_home_path = "$vanime_home/current"
+$vanime_config_resource = "prod.conf"
+$vanime_version = "vanime-1.0.0"
+
+add_user { "$vanime_username":
+  username => "$vanime_username",
+  full_name => "vanime server",
+  home => $vanime_home,
+}
+
+add_init_script {"$vanime_username":
+  name => "$vanime_username",
+  application_path => $vanime_home_path,
+  start_command => "$vanime_home_path/bin/$vanime_username -Xms128M -Xmx512m -Dconfig.resource=$vanime_config_resource -Dlogger.resource=prod-logger.xml -Dhttp.port=9002 -Dhttp.address=127.0.0.1 -Dapplication.secret=eiogasaegagAGaga4nn340v834vn23fß23c2f233",
+  user => "$vanime_username",
+  group => "$vanime_username",
+  pid_file => "$vanime_home_path/RUNNING_PID",
+  current_working_dir =>"$vanime_home",
+  unzipped_foldername => $vanime_version,
+  require => [Add_user[$vanime_username], File["$vanime_home_path start rights"]]
+}
+
+$vanime_artifact = "${vanime_artifact_folder}/${vanime_version}.zip"
+
+file {"$vanime_artifact_folder":
+  ensure => "directory",
+  group => "import",
+  owner => "import",
+  mode => 770,
+  require => Add_user["import"]
+}
+
+add_redeploy_init_script {"play redeploy daemon":
+  name => "${vanime_username}",
+  artifact => $vanime_artifact,
+}
+
+file {"$vanime_home rights":
+      path => $vanime_home_path,
+      ensure  => 'directory',
+      mode  => '0660',
+      owner => $vanime_username,
+      group => $vanime_username,
+      recurse => true,
+      require => [Package["packages"], Add_user["$vanime_username"], File["$vanime_artifact_folder"]],
+}
+
+file {"$vanime_home_path start rights":
+    path => "${vanime_home_path}/start",
+    owner => $vanime_username,
+    group => $vanime_username,
+    mode  => '0750',
+    require => [File["$vanime_home rights"]]
+}
+
+file {"$vanime_username-log-folder":
+    ensure  => 'directory',
+    path => "/var/log/$vanime_username/",
+    owner => $vanime_username,
+    group => $vanime_username,
+    mode  => '0770',
+    require => Add_user[$vanime_username],
+}
 	
 import "users/*.pp"

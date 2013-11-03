@@ -37,12 +37,44 @@
 </VirtualHost>
 
 <VirtualHost *:80>
+    ServerName vanime.julius-seltenheim.com
+	ServerAlias www.vanime.julius-seltenheim.com vanime.julius-seltenheim.de vanime
+
+    AllowEncodedSlashes on
+
+    ServerAdmin mail@julius-seltenheim.com
+	
+    CustomLog ${APACHE_LOG_DIR}/access-vanime.log combined
+    ErrorLog ${APACHE_LOG_DIR}/error-vanime.log
+    LogLevel warn
+
+    #http://playframework.blogspot.de/2010/03/upgrading-your-play-applications.html
+
+    <Proxy balancer://mycluster>
+        BalancerMember http://localhost:9002
+        BalancerMember http://localhost:9003
+    </Proxy>
+
+    <Proxy *>
+        Order Allow,Deny
+        Allow From All
+    </Proxy>
+    ProxyPreserveHost On
+    ProxyPass /balancer-manager !
+    ProxyPass / balancer://mycluster/ nocanon
+    ProxyPassReverse / http://localhost:9003/
+    ProxyPassReverse / http://localhost:9004/
+</VirtualHost>
+
+<!--
+<VirtualHost *:80>
 	ServerName calendar.julius-seltenheim.com
 
     RewriteEngine On
     RewriteCond %{HTTPS} off
     RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
 </VirtualHost>
+
 
 <VirtualHost *:443>
     ServerName calendar.julius-seltenheim.com
@@ -56,6 +88,7 @@
     </Location>
 	
     ProxyPreserveHost On
-    ProxyPass / http://localhost:8008/
-    ProxyPassReverse / http://localhost:8008/
+    ProxyPass / https://localhost:8443/
+    ProxyPassReverse / https://localhost:8443/
 </VirtualHost>
+-->
