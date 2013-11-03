@@ -12,6 +12,8 @@ deploy_env=prod
 
 service js_homepage-redeploy stop
 service js_homepage stop
+service vanime-redeploy stop
+service vanime stop
 
 echo "applying puppet scripts"
 export FACTER_deploy_environment=$deploy_env
@@ -21,3 +23,5 @@ puppet apply --modulepath "/puppet/modules" "../puppet/manifests/default.pp"
 
 service js_homepage-redeploy start
 service js_homepage start
+service vanime-redeploy start
+service vanime start
