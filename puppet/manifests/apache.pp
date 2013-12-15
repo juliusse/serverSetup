@@ -42,7 +42,6 @@ class apache($htpasswd_file_path = "/etc/apache2/.htpasswd") {
   module { "proxy":  }
   module { "proxy_http":  }
   module { "proxy_balancer":  }
-  module { "ssl":  }
   module { "headers":  }
   module { "rewrite":  }
 

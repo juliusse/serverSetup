@@ -1,19 +1,26 @@
 <VirtualHost *:80>
-	ServerAdmin mail@julius-seltenheim.com
-	ServerName NOT-FOUND
-	
-	Redirect 404 /
-	ErrorDocument 404 "Page Not Found"
+        ServerAdmin mail@julius-seltenheim.com
+        ServerName NOT-FOUND
+
+        Redirect 404 /
+        ErrorDocument 404 "Page Not Found"
+</VirtualHost>
+
+<VirtualHost *:80>
+        ServerName www.julius-seltenheim.com
+        ServerAlias www.julius-seltenheim.de julius-seltenheim.de seltenheim.info www.seltenheim.info
+
+        Redirect permanent / http://julius-seltenheim.com/
 </VirtualHost>
 
 <VirtualHost *:80>
     ServerName julius-seltenheim.com
-	ServerAlias www.julius-seltenheim.com www.julius-seltenheim.de julius-seltenheim.de seltenheim.info www.seltenheim.info js
+        ServerAlias js
 
     AllowEncodedSlashes on
 
     ServerAdmin mail@julius-seltenheim.com
-	
+
     CustomLog ${APACHE_LOG_DIR}/access.log combined
     ErrorLog ${APACHE_LOG_DIR}/error.log
     LogLevel warn
@@ -38,21 +45,21 @@
 
 <VirtualHost *:80>
     ServerName vanime.julius-seltenheim.com
-	ServerAlias www.vanime.julius-seltenheim.com vanime.julius-seltenheim.de vanime
+    ServerAlias vanime
 
     AllowEncodedSlashes on
 
     ServerAdmin mail@julius-seltenheim.com
-	
-    CustomLog ${APACHE_LOG_DIR}/access-vanime.log combined
-    ErrorLog ${APACHE_LOG_DIR}/error-vanime.log
+
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+    ErrorLog ${APACHE_LOG_DIR}/error.log
     LogLevel warn
 
     #http://playframework.blogspot.de/2010/03/upgrading-your-play-applications.html
 
     <Proxy balancer://mycluster>
-        BalancerMember http://localhost:9002
-        BalancerMember http://localhost:9003
+        BalancerMember http://localhost:9010
+        BalancerMember http://localhost:9011
     </Proxy>
 
     <Proxy *>
@@ -62,33 +69,8 @@
     ProxyPreserveHost On
     ProxyPass /balancer-manager !
     ProxyPass / balancer://mycluster/ nocanon
-    ProxyPassReverse / http://localhost:9003/
-    ProxyPassReverse / http://localhost:9004/
-</VirtualHost>
-
-<!--
-<VirtualHost *:80>
-	ServerName calendar.julius-seltenheim.com
-
-    RewriteEngine On
-    RewriteCond %{HTTPS} off
-    RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
+    ProxyPassReverse / http://localhost:9010/
+    ProxyPassReverse / http://localhost:9011/
 </VirtualHost>
 
 
-<VirtualHost *:443>
-    ServerName calendar.julius-seltenheim.com
-
-	RequestHeader set X-Forwarded-Proto "https"
-    SSLEngine On
-    SSLCertificateFile /etc/ssl/certs/julius-seltenheim.com.crt
-    SSLCertificateKeyFile /etc/ssl/private/julius-seltenheim.com.key
-    <Location />
-        SSLRequireSSL
-    </Location>
-	
-    ProxyPreserveHost On
-    ProxyPass / https://localhost:8443/
-    ProxyPassReverse / https://localhost:8443/
-</VirtualHost>
--->

@@ -44,3 +44,73 @@ define add_redeploy_init_script($name, $artifact) {
   }
 }
 
+define add_play22_application($name,$version,$configFile,$loggerFile,$port,$app_secret) {
+	$username = "$name"
+	$folder_artifact = "/home/import/$username"
+	$folder_home = "/var/$username"
+	$folder_current = "$folder_home/current"
+	$app_version = "$username-$version"
+	$config_file = "$configFile"
+
+	add_user { "$username":
+	  username => "$username",
+	  full_name => "username server",
+	  home => $folder_home,
+	}
+
+	add_init_script {"$username":
+		 name => "$username",
+		 application_path => $folder_home,
+		 start_command => "$folder_current/bin/$username -Dconfig.resource=$config_file -Dlogger.resource=$loggerFile -Dhttp.port=$port -Dhttp.address=127.0.0.1 -Dapplication.secret=$app_secret",
+		 user => "$username",
+		 group => "$username",
+		 pid_file => "$folder_current/RUNNING_PID",
+		 current_working_dir =>"$folder_home",
+		 unzipped_foldername => $app_version,
+		 require => [Add_user[$username], File["$folder_current bin rights"]]
+	}
+	
+	$artifact = "${folder_artifact}/${app_version}.zip"
+	
+	file {"$folder_artifact":
+	  ensure => "directory",
+	  group => "import",
+	  owner => "import",
+	  mode => 770,
+	  require => Add_user["import"]
+	}
+	
+	
+	add_redeploy_init_script {"$username redeploy daemon":
+	  name => "${username}",
+	  artifact => $artifact,
+	}
+
+	file {"$folder_home rights":
+		  path => $folder_current,
+		  ensure  => 'directory',
+		  mode  => '0660',
+		  owner => $username,
+		  group => $username,
+		  recurse => true,
+		  require => [Package["packages"], Add_user["$username"], File["$folder_artifact"]],
+	}
+
+	file {"$folder_current bin rights":
+		path => "${folder_current}/bin/$username",
+		owner => $username,
+		group => $username,
+		mode  => '0750',
+		require => [File["$folder_home rights"]]
+	}
+
+	file {"$username-log-folder":
+		ensure  => 'directory',
+		path => "/var/log/$username/",
+		owner => $username,
+		group => $username,
+		mode  => '0770',
+		require => Add_user[$username],
+	}
+}
+
