@@ -1,4 +1,4 @@
-define add_init_script($name, $application_path, $start_command, $user, $group, $pid_file, $current_working_dir, $unzipped_foldername) {
+define add_init_script($name, $application_path, $start_command, $user, $group, $pid_file, $current_working_dir) {
 
   file {"/etc/init.d/$name":
       content => template("$stuff_folder/manifests/init-with-pid.erb"),
@@ -18,7 +18,7 @@ package {"inotify-tools":
     require => Exec['apt-get-update'],
 }
 
-define add_redeploy_init_script($name, $artifact) {
+define add_redeploy_init_script($name) {
   $redeploy_name="$name-redeploy"
 
   file {"/etc/init.d/$redeploy_name":
@@ -81,7 +81,6 @@ define add_play22_application($name,$configFile,$loggerFile,$port,$app_secret) {
 	
 	add_redeploy_init_script {"$username redeploy daemon":
 	  name => "${username}"
-	  redeploy_name => ${name}
 	}
 
 	file {"$folder_home rights":
