@@ -44,12 +44,11 @@ define add_redeploy_init_script($name, $artifact) {
   }
 }
 
-define add_play22_application($name,$version,$configFile,$loggerFile,$port,$app_secret) {
+define add_play22_application($name,$configFile,$loggerFile,$port,$app_secret) {
 	$username = "$name"
 	$folder_artifact = "/home/import/$username"
 	$folder_home = "/var/$username"
 	$folder_current = "$folder_home/current"
-	$app_version = "$username-$version"
 	$config_file = "$configFile"
 
 	add_user { "$username":
@@ -66,7 +65,6 @@ define add_play22_application($name,$version,$configFile,$loggerFile,$port,$app_
 		 group => "$username",
 		 pid_file => "$folder_current/RUNNING_PID",
 		 current_working_dir =>"$folder_home",
-		 unzipped_foldername => $app_version,
 		 require => [Add_user[$username], File["$folder_current bin rights"]]
 	}
 	
@@ -82,8 +80,8 @@ define add_play22_application($name,$version,$configFile,$loggerFile,$port,$app_
 	
 	
 	add_redeploy_init_script {"$username redeploy daemon":
-	  name => "${username}",
-	  artifact => $artifact,
+	  name => "${username}"
+	  redeploy_name => ${name}
 	}
 
 	file {"$folder_home rights":

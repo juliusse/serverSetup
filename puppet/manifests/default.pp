@@ -22,7 +22,6 @@ package { "packages":
 $js_homepage_secret="eiogwneiognw308g34g34nn340v834vn23fd23c2f233"
 add_play22_application {"homepage":
 	name => "js_homepage",
-	version => "3.0.0",
 	configFile => "prod.conf",
 	loggerFile => "prod-logger.xml",
 	port => "9000",
@@ -32,7 +31,6 @@ add_play22_application {"homepage":
 $vanime_secret="sjfnweilbeibiuwb3892vn2ol3nqi3qi3cnqi3nquncc"
 add_play22_application {"vanime":
 	name => "vanime",
-	version => "1.0.0",
 	configFile => "prod.conf",
 	loggerFile => "prod-logger.xml",
 	port => "9010",
