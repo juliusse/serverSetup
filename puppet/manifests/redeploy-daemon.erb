@@ -43,8 +43,8 @@ run() {
         result_of_inotify_wait=$?
         if [ "$result_of_inotify_wait" == "0" ]; then
 			echo redeploy
-			touch file
-			echo ${file%.zip} > file
+			touch /home/import/${APPLICATION_NAME}/file
+			echo ${file%.zip} > /home/import/${APPLICATION_NAME}/file
             service ${NAME} next
         elif [ "$result_of_inotify_wait" == "1" ] ; then
             echo not found
