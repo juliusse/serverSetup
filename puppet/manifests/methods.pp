@@ -68,8 +68,6 @@ define add_play22_application($name,$configFile,$loggerFile,$port,$app_secret) {
 		 require => [Add_user[$username], File["$folder_current bin rights"]]
 	}
 	
-	$artifact = "${folder_artifact}/${app_version}.zip"
-	
 	file {"$folder_artifact":
 	  ensure => "directory",
 	  group => "import",
