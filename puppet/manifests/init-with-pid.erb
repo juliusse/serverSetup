@@ -98,7 +98,8 @@ next() {
 		last_folder=/var/${service_name}/last
         import_folder=/home/import/${service_name}
 
-        unzipped_folder=$(cat "${import_folder}/file")
+		zip_file=$(ls -la | grep ${service_name} | awk '{ print $9 }')
+        unzipped_folder=$(echo ${zip_file%.zip})
 
 		#remove last version
 		rm -rf ${last_folder}
