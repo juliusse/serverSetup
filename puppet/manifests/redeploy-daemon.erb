@@ -39,7 +39,7 @@ run() {
     should_run=1
     while [ "$should_run" == "1" ]; do
         echo waiting for changes on $(date)
-		file=$(inotifywait -e close_write /home/import/${APPLICATION_NAME}/ | awk '{ print $3 }')
+		file=$(inotifywait -e close_write /home/import/${NAME}/ | awk '{ print $3 }')
         result_of_inotify_wait=$?
 		if [[ -z "$file" ]]; then
 			echo not found
