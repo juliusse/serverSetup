@@ -98,7 +98,7 @@ next() {
 		last_folder=/var/${service_name}/last
         import_folder=/home/import/${service_name}
 
-		zip_file=$(ls -la | grep ${service_name} | awk '{ print $9 }')
+		zip_file=$(ls -la ${import_folder} | grep ${service_name} | awk '{ print $9 }')
         unzipped_folder=$(echo ${zip_file%.zip})
 
 		#remove last version
@@ -110,10 +110,10 @@ next() {
 		
 		#unzip new version
         cd ${import_folder}
-		unzip ${unzipped_folder}.zip
+		unzip ${zip_file}
 		mkdir ${current_folder}
 		mv ${unzipped_folder}/* ${current_folder}
-        rm -rf ${unzipped_folder}
+        rm -rf ${import_folder}/*
         
         chown -R ${service_name}:${service_name} ${current_folder}
         service ${service_name} start

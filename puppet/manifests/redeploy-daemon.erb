@@ -41,7 +41,9 @@ run() {
         echo waiting for changes on $(date)
 		file=$(inotifywait -e close_write /home/import/${APPLICATION_NAME}/ | awk '{ print $3 }')
         result_of_inotify_wait=$?
-        if [ "$result_of_inotify_wait" == "0" ]; then
+		if [[ -z "$file" ]]; then
+			echo not found
+        elif [ "$result_of_inotify_wait" == "0" ]; then
 			echo redeploy
             service ${NAME} next
         elif [ "$result_of_inotify_wait" == "1" ] ; then
