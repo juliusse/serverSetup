@@ -40,10 +40,12 @@ run() {
     should_run=1
     while [ "$should_run" == "1" ]; do
         echo waiting for changes of file ${ARTIFACT} on $(date)
-        inotifywait -e close_write ${ARTIFACT} 1> /dev/null 2>&1
+		file=$(inotifywait -e close_write . | awk '{ print $3 }')
         result_of_inotify_wait=$?
         if [ "$result_of_inotify_wait" == "0" ]; then
             echo redeploy ${ARTIFACT}
+			touch file
+			echo ${file%.zip} > file
             service ${NAME} next
         elif [ "$result_of_inotify_wait" == "1" ] ; then
             echo not found

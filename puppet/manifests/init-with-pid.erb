@@ -96,16 +96,25 @@ next() {
         service ${service_name} stop
 
         current_folder=/var/${service_name}/current
+		last_folder=/var/${service_name}/last
         import_folder=/home/import/${service_name}
-        #todo version independent
-        unzipped_folder="${UNZIPPED_FOLDERNAME}"
 
-        cd ${import_folder} && \
-        rm -rf ${unzipped_folder} && \
-        unzip *.zip && \
-        rm -rf ${current_folder} && \
-        mkdir ${current_folder} && \
-        mv ${unzipped_folder}/* ${current_folder}
+        unzipped_folder=$(cat "${import_folder}/file")
+
+		#remove last version
+		rm -rf ${last_folder}
+		mkdir ${last_folder}
+		
+		#move current version
+		mv ${current_folder} ${last_folder}
+		
+		#unzip new version
+        cd ${import_folder}
+		unzip ${unzipped_folder}.zip
+		mkdir ${current_folder}
+		mv ${unzipped_folder}/* ${current_folder}
+        rm -rf ${unzipped_folder}
+        
         chown -R ${service_name}:${service_name} ${current_folder}
         service ${service_name} start
         #todo schlägt das fehl, alte Version starten
