@@ -97,27 +97,31 @@ next() {
         current_folder=/var/${service_name}/current
 		last_folder=/var/${service_name}/last
         import_folder=/home/import/${service_name}
-
-		zip_file=$(ls -la ${import_folder} | grep ${service_name} | awk '{ print $9 }')
-        unzipped_folder=$(echo ${zip_file%.zip})
-
-		#remove last version
-		rm -rf ${last_folder}
-		mkdir ${last_folder}
 		
-		#move current version
-		mv ${current_folder} ${last_folder}
+		if [ "$(ls -A $import_folder)" ]; then
+			zip_file=$(ls -la ${import_folder} | grep ${service_name} | awk '{ print $9 }')
 		
-		#unzip new version
-        cd ${import_folder}
-		unzip ${zip_file}
-		mkdir ${current_folder}
-		mv ${unzipped_folder}/* ${current_folder}
-        rm -rf ${import_folder}/*
-        
-        chown -R ${service_name}:${service_name} ${current_folder}
-        service ${service_name} start
-        #todo schlägt das fehl, alte Version starten
+		    unzipped_folder=$(echo ${zip_file%.zip})
+
+			#remove last version
+			rm -rf ${last_folder}
+			mkdir ${last_folder}
+			
+			#move current version
+			mv ${current_folder} ${last_folder}
+			
+			#unzip new version
+			cd ${import_folder}
+			unzip ${zip_file}
+			mkdir ${current_folder}
+			mv ${unzipped_folder}/* ${current_folder}
+			rm -rf ${import_folder}/*
+			
+			chown -R ${service_name}:${service_name} ${current_folder}
+			service ${service_name} start
+			#todo schlägt das fehl, alte Version starten
+		fi
+		
 }
 case "$1" in
         start)
